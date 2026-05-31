@@ -1,12 +1,12 @@
 const { app } = require('@azure/functions');
 
-app.http('Ping', {
-    methods: ['GET'],
+app.http('ping', {
+    methods: ['GET', 'POST'],
     authLevel: 'anonymous',
     handler: async (request, context) => {
-        return {
-            status: 200,
-            jsonBody: { mensaje: "¡La API en Azure está viva y funcionando!" }
+        return { 
+            status: 200, 
+            jsonBody: { mensaje: "¡La API V4 nativa esta viva!" } 
         };
     }
 });
