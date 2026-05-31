@@ -1,7 +1,7 @@
 {
   "name": "minimarket-api",
   "version": "1.0.0",
-  "main": "src/functions/*.js",
+  "main": "src//*.js",
   "engines": {
     "node": "20.x"
   },
