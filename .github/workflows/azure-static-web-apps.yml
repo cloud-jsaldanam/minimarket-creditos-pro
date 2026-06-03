@@ -3,7 +3,7 @@ with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: "upload"
           app_location: "frontend"
-          api_location: ""
+          api_location: "api"       # <--- CAMBIA ESTO (Pon "api" dentro de las comillas)
           output_location: "dist"
           skip_app_build: false
-          skip_api_build: true
+          skip_api_build: false     # <--- CAMBIA ESTO (Pon false para que vuelva a compilar)
