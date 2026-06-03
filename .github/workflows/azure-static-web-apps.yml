@@ -3,6 +3,7 @@ with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: "upload"
           app_location: "frontend"
+          api_location: ""
           output_location: "dist"
           skip_app_build: false
           skip_api_build: true
