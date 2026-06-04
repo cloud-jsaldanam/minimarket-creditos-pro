@@ -21,7 +21,7 @@ export default function Deudores() {
         </h2>
         <div className="text-right">
           <p className="text-xs text-gray-500 uppercase tracking-wide">Deuda Total</p>
-          <p className="text-2xl font-black text-red-600">${totalDeuda.toFixed(2)}</p>
+          <p className="text-2xl font-black text-red-600">S/ {totalDeuda.toFixed(2)}</p>
         </div>
       </div>
 
@@ -33,7 +33,7 @@ export default function Deudores() {
               <p className="text-xs text-red-400 font-medium">{deudor.diasRetraso} días de retraso</p>
             </div>
             <div className="flex items-center gap-4">
-              <span className="font-bold text-gray-800">${deudor.monto.toFixed(2)}</span>
+              <span className="font-bold text-gray-800"> S/ {deudor.monto.toFixed(2)}</span>
               <button className="bg-white border border-gray-200 text-gray-600 px-3 py-1 rounded-lg text-sm hover:bg-gray-800 hover:text-white transition-colors shadow-sm">
                 Abonar
               </button>

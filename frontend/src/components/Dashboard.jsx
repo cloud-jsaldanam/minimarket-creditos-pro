@@ -28,7 +28,7 @@ export default function Dashboard() {
             <div key={index} className="flex flex-col items-center w-full group">
               {/* Tooltip flotante al pasar el mouse */}
               <span className="opacity-0 group-hover:opacity-100 transition-opacity text-xs font-bold text-gray-700 mb-1">
-                ${v.total}
+                S/ {v.total}
               </span>
               {/* La barra */}
               <div 

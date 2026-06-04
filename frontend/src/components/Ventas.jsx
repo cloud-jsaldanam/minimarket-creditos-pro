@@ -10,7 +10,7 @@ export default function Ventas() {
       alert('⚠️ Por favor completa todos los campos de la venta.');
       return;
     }
-    alert(`🛒 ¡Venta Registrada en Frontend!\nCliente: ${cliente}\nProducto: ${producto}\nPrecio: $${precio}`);
+    alert(`🛒 ¡Venta Registrada en Frontend!\nCliente: ${cliente}\nProducto: ${producto}\nPrecio: S/ ${precio}`);
     setProducto('');
     setPrecio('');
   };

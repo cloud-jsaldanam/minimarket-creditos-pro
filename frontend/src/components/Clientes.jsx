@@ -3,19 +3,43 @@ import React, { useState } from 'react';
 export default function Clientes() {
   const [nombre, setNombre] = useState('');
   const [telefono, setTelefono] = useState('');
+  const [guardando, setGuardando] = useState(false);
 
-  // Esta función se ejecuta al hacer clic en Guardar
-  const handleGuardarCliente = () => {
+  // Conexión real al Backend
+  const handleGuardarCliente = async () => {
     if (!nombre) {
       alert('⚠️ Por favor, ingresa el nombre del cliente.');
       return;
     }
-    // Aquí luego enviaremos la data a Cosmos DB a través de tu API
-    alert(`✅ ¡Cliente capturado!\nNombre: ${nombre}\nTeléfono: ${telefono}\n\n(Pronto lo conectaremos a la base de datos)`);
-    
-    // Limpiamos las cajas de texto
-    setNombre('');
-    setTelefono('');
+
+    setGuardando(true);
+    try {
+      // Llamamos a la API que creamos en el paso anterior
+      const response = await fetch('/api/clientes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          nombre: nombre, 
+          telefono: telefono,
+          fechaRegistro: new Date().toISOString()
+        })
+      });
+
+      if (response.ok) {
+        alert('✅ ¡Cliente guardado exitosamente en Cosmos DB!');
+        setNombre('');
+        setTelefono('');
+      } else {
+        alert('❌ Hubo un error al guardar en la base de datos.');
+      }
+    } catch (error) {
+      alert('❌ Error de conexión con el servidor.');
+      console.error(error);
+    } finally {
+      setGuardando(false);
+    }
   };
 
   return (
@@ -30,20 +54,22 @@ export default function Clientes() {
           value={nombre}
           onChange={(e) => setNombre(e.target.value)}
           placeholder="Nombre (Ej. Juan Pérez)" 
-          className="w-full border border-gray-300 rounded-xl px-4 py-3 bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-300"
+          className="w-full border border-gray-300 rounded-xl px-4 py-3 bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-300"
         />
         <input 
           type="text" 
           value={telefono}
           onChange={(e) => setTelefono(e.target.value)}
           placeholder="Teléfono (Opcional)" 
-          className="w-full border border-gray-300 rounded-xl px-4 py-3 bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-300"
+          className="w-full border border-gray-300 rounded-xl px-4 py-3 bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-300"
         />
         <button 
           onClick={handleGuardarCliente}
-          className="w-full bg-indigo-600 text-white font-bold text-lg py-3 px-4 rounded-xl shadow-md hover:bg-indigo-700 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 flex justify-center items-center gap-2 mt-2"
+          disabled={guardando}
+          className={`w-full text-white font-bold text-lg py-3 px-4 rounded-xl shadow-md transition-all duration-300 flex justify-center items-center gap-2 mt-2 ${guardando ? 'bg-gray-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700 hover:shadow-lg transform hover:-translate-y-1'}`}
         >
-          <span>💾</span> Guardar Cliente
+          <span>{guardando ? '⏳' : '💾'}</span> 
+          {guardando ? 'Guardando en BD...' : 'Guardar Cliente'}
         </button>
       </div>
     </div>
