@@ -2,7 +2,7 @@ const { app } = require('@azure/functions');
 const { getContainers } = require('../db');
 
 app.http('ventas', {
-    methods: ['GET', 'POST', 'DELETE'], // Agregamos DELETE
+    methods: ['GET', 'POST', 'DELETE'],
     authLevel: 'anonymous',
     handler: async (request, context) => {
         try {
@@ -21,7 +21,6 @@ app.http('ventas', {
                 return { status: 200, jsonBody: resources };
             }
 
-            // NUEVO: Permiso para eliminar una venta/deuda
             if (request.method === 'DELETE') {
                 const id = request.query.get('id');
                 await containerVentas.item(id, id).delete();
