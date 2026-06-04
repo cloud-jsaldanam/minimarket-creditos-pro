@@ -2,7 +2,7 @@ const { app } = require('@azure/functions');
 const { getContainers } = require('../db');
 
 app.http('ventas', {
-    methods: ['GET', 'POST', 'DELETE'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
     authLevel: 'anonymous',
     handler: async (request, context) => {
         try {
@@ -21,10 +21,25 @@ app.http('ventas', {
                 return { status: 200, jsonBody: resources };
             }
 
+            // NUEVO: Abonar a una deuda
+            if (request.method === 'PUT') {
+                const { id, abono } = await request.json();
+                const { resource: venta } = await containerVentas.item(id, id).read();
+                
+                venta.precio = venta.precio - abono;
+                if (venta.precio <= 0) {
+                    venta.precio = 0;
+                    venta.estado = 'Pagado';
+                }
+                
+                const { resource: updated } = await containerVentas.item(id, id).replace(venta);
+                return { status: 200, jsonBody: updated };
+            }
+
             if (request.method === 'DELETE') {
                 const id = request.query.get('id');
                 await containerVentas.item(id, id).delete();
-                return { status: 200, jsonBody: { message: "Registro eliminado exitosamente." } };
+                return { status: 200, jsonBody: { message: "Registro eliminado." } };
             }
         } catch (error) {
             return { status: 500, jsonBody: { error: error.message } };

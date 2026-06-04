@@ -2,7 +2,7 @@ const { app } = require('@azure/functions');
 const { getContainers } = require('../db');
 
 app.http('clientes', {
-    methods: ['GET', 'POST'],
+    methods: ['GET', 'POST', 'DELETE'],
     authLevel: 'anonymous',
     handler: async (request, context) => {
         try {
@@ -10,8 +10,6 @@ app.http('clientes', {
 
             if (request.method === 'POST') {
                 const data = await request.json();
-                
-                // REGLA DE NEGOCIO: Bloquear duplicados
                 const query = `SELECT * FROM c WHERE LOWER(c.nombre) = '${data.nombre.toLowerCase().trim()}'`;
                 const { resources: existentes } = await containerClientes.items.query(query).fetchAll();
                 
@@ -27,6 +25,13 @@ app.http('clientes', {
             if (request.method === 'GET') {
                 const { resources } = await containerClientes.items.query("SELECT * from c").fetchAll();
                 return { status: 200, jsonBody: resources };
+            }
+
+            // NUEVO: Eliminar cliente
+            if (request.method === 'DELETE') {
+                const id = request.query.get('id');
+                await containerClientes.item(id, id).delete();
+                return { status: 200, jsonBody: { message: "Cliente eliminado exitosamente." } };
             }
         } catch (error) {
             return { status: 500, jsonBody: { error: error.message } };

@@ -8,9 +8,7 @@ export default function Clientes() {
   const [notificacion, setNotificacion] = useState({ visible: false, texto: '', tipo: '' });
 
   const cargarClientes = () => {
-    fetch('/api/clientes')
-      .then(res => res.json())
-      .then(data => { if(Array.isArray(data)) setClientes(data); });
+    fetch('/api/clientes').then(res => res.json()).then(data => { if(Array.isArray(data)) setClientes(data); });
   };
 
   useEffect(() => { cargarClientes(); }, []);
@@ -29,12 +27,11 @@ export default function Clientes() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nombre: nombre.trim(), telefono })
       });
-      
       const data = await response.json();
       if (response.ok) {
         mostrarNotificacion('✅ Cliente guardado exitosamente', 'exito');
         setNombre(''); setTelefono('');
-        cargarClientes(); // Recargamos la lista
+        cargarClientes();
       } else {
         mostrarNotificacion(`❌ ${data.error || 'Error al guardar'}`, 'error');
       }
@@ -43,6 +40,27 @@ export default function Clientes() {
     } finally {
       setGuardando(false);
     }
+  };
+
+  const eliminarCliente = async (id) => {
+    if(window.confirm("¿Estás seguro de eliminar a este cliente permanentemente?")) {
+      await fetch(`/api/clientes?id=${id}`, { method: 'DELETE' });
+      cargarClientes();
+      mostrarNotificacion('🗑️ Cliente eliminado', 'exito');
+    }
+  };
+
+  const descargarCSV = () => {
+    const cabeceras = "Nombre,Telefono\n";
+    const filas = clientes.map(c => `"${c.nombre}","${c.telefono || 'Sin teléfono'}"`).join("\n");
+    const blob = new Blob([cabeceras + filas], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'Registro_Clientes.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
@@ -62,19 +80,28 @@ export default function Clientes() {
           <input type="text" value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Nombre (Ej. Juan Pérez)" className="w-1/2 border border-gray-300 rounded-xl px-4 py-3 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-indigo-500" />
           <input type="text" value={telefono} onChange={(e) => setTelefono(e.target.value)} placeholder="Teléfono (Opcional)" className="w-1/2 border border-gray-300 rounded-xl px-4 py-3 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-indigo-500" />
         </div>
-        <button onClick={handleGuardarCliente} disabled={guardando} className="w-full text-white font-bold py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 transition-all">
+        <button onClick={handleGuardarCliente} disabled={guardando} className="w-full text-white font-bold py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 transition-all shadow-md">
           {guardando ? 'Guardando...' : 'Guardar Cliente'}
         </button>
       </div>
 
-      {/* LISTA DE CLIENTES REGISTRADOS */}
       <div className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100">
-        <h2 className="text-xl font-extrabold text-gray-800 mb-4">Directorio de Clientes ({clientes.length})</h2>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-extrabold text-gray-800">Directorio ({clientes.length})</h2>
+          <button onClick={descargarCSV} className="bg-green-100 text-green-700 px-4 py-2 rounded-lg font-bold hover:bg-green-600 hover:text-white transition-all flex items-center gap-2">
+            <span>📊</span> Descargar CSV
+          </button>
+        </div>
         <div className="max-h-64 overflow-y-auto border border-gray-100 rounded-xl">
           {clientes.map(c => (
-            <div key={c.id} className="p-4 border-b border-gray-100 flex justify-between items-center hover:bg-gray-50">
-              <p className="font-bold text-gray-700">{c.nombre}</p>
-              <p className="text-sm text-gray-500">{c.telefono || 'Sin teléfono'}</p>
+            <div key={c.id} className="p-4 border-b border-gray-100 flex justify-between items-center hover:bg-gray-50 group">
+              <div>
+                <p className="font-bold text-gray-700">{c.nombre}</p>
+                <p className="text-sm text-gray-500">{c.telefono || 'Sin teléfono'}</p>
+              </div>
+              <button onClick={() => eliminarCliente(c.id)} className="bg-red-50 text-red-400 px-3 py-1 rounded-md opacity-0 group-hover:opacity-100 hover:bg-red-500 hover:text-white transition-all">
+                Eliminar
+              </button>
             </div>
           ))}
         </div>
