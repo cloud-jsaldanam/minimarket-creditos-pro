@@ -8,29 +8,29 @@ export default function Ventas() {
   const [precio, setPrecio] = useState('');
   const [tipoPago, setTipoPago] = useState('Contado');
   const [guardando, setGuardando] = useState(false);
+  const [notificacion, setNotificacion] = useState({ visible: false, texto: '', tipo: '' });
 
-  // 1. Al cargar la pantalla, traemos los clientes reales de Cosmos DB
   useEffect(() => {
     fetch('/api/clientes')
       .then(res => res.json())
-      .then(data => setClientes(data))
-      .catch(err => console.error("Error cargando clientes:", err));
+      .then(data => {
+        if(Array.isArray(data)) setClientes(data);
+      })
+      .catch(err => console.error("Error API:", err));
   }, []);
 
-  // 2. Lógica del buscador en tiempo real
-  const clientesFiltrados = busqueda === '' ? [] : clientes.filter(c => 
-    c.nombre.toLowerCase().includes(busqueda.toLowerCase())
-  );
-
-  const seleccionarCliente = (cliente) => {
-    setClienteSeleccionado(cliente);
-    setBusqueda(cliente.nombre); // Llenamos el input con el nombre
+  const mostrarNotificacion = (texto, tipo) => {
+    setNotificacion({ visible: true, texto, tipo });
+    setTimeout(() => setNotificacion({ visible: false, texto: '', tipo: '' }), 4000);
   };
 
-  // 3. Guardar la venta en la Base de Datos
+  const clientesFiltrados = busqueda === '' ? [] : clientes.filter(c => 
+    c.nombre?.toLowerCase().includes(busqueda.toLowerCase())
+  );
+
   const handleAgregarVenta = async () => {
     if (!clienteSeleccionado || !producto || !precio) {
-      alert('⚠️ Por favor selecciona un cliente y completa la venta.');
+      mostrarNotificacion('⚠️ Por favor selecciona un cliente y completa la venta.', 'error');
       return;
     }
 
@@ -50,11 +50,13 @@ export default function Ventas() {
       });
 
       if (response.ok) {
-        alert('✅ ¡Venta Registrada Exitosamente!');
+        mostrarNotificacion('✅ Venta registrada correctamente.', 'exito');
         setBusqueda(''); setClienteSeleccionado(null); setProducto(''); setPrecio('');
+      } else {
+        mostrarNotificacion('❌ Error al guardar en la base de datos.', 'error');
       }
     } catch (error) {
-      alert('❌ Error al guardar la venta.');
+      mostrarNotificacion('❌ Error de comunicación con el servidor.', 'error');
     } finally {
       setGuardando(false);
     }
@@ -65,30 +67,34 @@ export default function Ventas() {
       <h2 className="text-xl font-extrabold text-gray-800 mb-6 flex items-center gap-2">
         <span className="text-orange-500">📝</span> Nueva Venta
       </h2>
+
+      {notificacion.visible && (
+        <div className={`p-4 mb-6 rounded-xl font-medium transition-all ${notificacion.tipo === 'exito' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
+          {notificacion.texto}
+        </div>
+      )}
       
       <div className="space-y-4 relative">
-        {/* BUSCADOR AUTOCOMPLETADO */}
         <div className="relative">
           <input 
             type="text" 
             value={busqueda}
             onChange={(e) => {
               setBusqueda(e.target.value);
-              setClienteSeleccionado(null); // Resetea si cambia el texto
+              setClienteSeleccionado(null);
             }}
             placeholder="Buscar cliente por nombre..." 
             className="w-full border border-gray-300 rounded-xl px-4 py-3 bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
-          {/* Menú desplegable de resultados */}
           {clientesFiltrados.length > 0 && !clienteSeleccionado && (
-            <ul className="absolute z-10 w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto mt-1">
+            <ul className="absolute z-20 w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto mt-1">
               {clientesFiltrados.map(c => (
                 <li 
                   key={c.id} 
-                  onClick={() => seleccionarCliente(c)}
+                  onClick={() => { setClienteSeleccionado(c); setBusqueda(c.nombre); }}
                   className="px-4 py-3 hover:bg-indigo-50 cursor-pointer border-b border-gray-100 font-medium text-gray-700"
                 >
-                  {c.nombre} <span className="text-xs text-gray-400 ml-2">{c.telefono}</span>
+                  {c.nombre}
                 </li>
               ))}
             </ul>
@@ -122,7 +128,7 @@ export default function Ventas() {
           <button 
             onClick={handleAgregarVenta}
             disabled={guardando}
-            className="w-1/3 bg-gray-800 text-white font-bold py-3 px-4 rounded-xl hover:bg-gray-900 transition-all flex justify-center items-center gap-1"
+            className={`w-1/3 text-white font-bold py-3 px-4 rounded-xl transition-all flex justify-center items-center gap-1 ${guardando ? 'bg-gray-400 cursor-not-allowed' : 'bg-gray-800 hover:bg-gray-900 shadow-md'}`}
           >
             <span>{guardando ? '⏳' : '⬇️'}</span> {guardando ? '...' : 'Agregar'}
           </button>
