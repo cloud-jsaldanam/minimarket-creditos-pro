@@ -4,6 +4,9 @@ export default function Deudores() {
   const [deudasAgrupadas, setDeudasAgrupadas] = useState({});
   const [ventasOriginales, setVentasOriginales] = useState([]);
   const [cargando, setCargando] = useState(true);
+  
+  // Estado para controlar qué cliente está desplegado (Acordeón)
+  const [clienteExpandido, setClienteExpandido] = useState(null);
 
   const cargarDeudas = () => {
     fetch('/api/ventas').then(res => res.json()).then(ventas => {
@@ -27,31 +30,29 @@ export default function Deudores() {
 
   useEffect(() => { cargarDeudas(); }, []);
 
-  // LÓGICA CONTABLE AVANZADA: Pago Global repartido en los tickets más antiguos (FIFO)
+  const toggleDetalles = (nombre) => {
+    setClienteExpandido(clienteExpandido === nombre ? null : nombre);
+  };
+
   const abonarDeudaGlobal = async (nombreCliente, historial, deudaTotal) => {
-    const montoRaw = prompt(`ESTADO DE CUENTA: ${nombreCliente}\nDeuda Total Actual: S/ ${deudaTotal.toFixed(2)}\n\n¿Cuánto dinero abonará el cliente en este momento?`);
+    const montoRaw = prompt(`ESTADO DE CUENTA: ${nombreCliente}\nDeuda Total: S/ ${deudaTotal.toFixed(2)}\n\n¿Cuánto abonará el cliente?`);
     if (montoRaw === null) return; 
     
     let abonoPendiente = parseFloat(montoRaw);
-    if (isNaN(abonoPendiente) || abonoPendiente <= 0) return alert("⚠️ Monto inválido. Ingresa un número mayor a 0.");
-    if (abonoPendiente > deudaTotal) return alert(`⚠️ El abono (S/ ${abonoPendiente}) no puede ser mayor a la deuda total (S/ ${deudaTotal}).`);
+    if (isNaN(abonoPendiente) || abonoPendiente <= 0) return alert("⚠️ Monto inválido.");
+    if (abonoPendiente > deudaTotal) return alert(`⚠️ El abono no puede superar la deuda total.`);
 
     try {
-      // 1. Ordenar el historial de compras de la más antigua a la más nueva
       const ventasOrdenadas = [...historial].sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
 
-      // 2. Repartir el dinero ingresado
       for (const venta of ventasOrdenadas) {
-        if (abonoPendiente <= 0) break; // Si ya se acabó el dinero del abono, paramos
-
+        if (abonoPendiente <= 0) break; 
         const saldoVenta = venta.saldo !== undefined ? venta.saldo : (venta.total || venta.precio);
         
         if (saldoVenta > 0) {
-          // Calculamos cuánto podemos pagarle a esta venta específica
           const montoAAplicar = Math.min(abonoPendiente, saldoVenta);
-          abonoPendiente -= montoAAplicar; // Descontamos del fajo de dinero que nos dio el cliente
+          abonoPendiente -= montoAAplicar; 
 
-          // Enviamos a la base de datos el pago de este pedacito
           await fetch('/api/ventas', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
@@ -60,10 +61,10 @@ export default function Deudores() {
         }
       }
 
-      alert(`✅ Abono de S/ ${parseFloat(montoRaw).toFixed(2)} registrado exitosamente. Los saldos se han actualizado.`);
+      alert(`✅ Abono registrado exitosamente.`);
       cargarDeudas();
     } catch (error) {
-      alert("❌ Error al procesar el abono en la base de datos.");
+      alert("❌ Error al procesar el abono.");
     }
   };
 
@@ -89,13 +90,12 @@ export default function Deudores() {
 
   return (
     <div className="bg-white p-8 rounded-2xl shadow-lg border border-red-100">
-      {/* CABECERA PRINCIPAL */}
       <div className="flex justify-between items-end mb-8 border-b pb-4">
         <h2 className="text-2xl font-extrabold text-gray-800 flex items-center gap-2">
           <span className="text-red-500">⚠️</span> Control de Créditos
         </h2>
         <div className="flex items-center gap-6">
-          <button onClick={descargarCSVDeudas} className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-4 py-2 rounded-lg font-bold hover:bg-emerald-600 hover:text-white transition-all shadow-sm">
+          <button onClick={descargarCSVDeudas} className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-4 py-2 rounded-lg font-bold hover:bg-emerald-600 hover:text-white transition-all shadow-sm text-sm">
             📊 Descargar CSV
           </button>
           <div className="text-right">
@@ -105,53 +105,64 @@ export default function Deudores() {
         </div>
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-4">
         {cargando ? <p className="text-gray-500 animate-pulse">Consultando base de datos...</p> : Object.keys(deudasAgrupadas).length === 0 ? (
-          <p className="text-emerald-600 font-bold bg-emerald-50 p-6 rounded-xl border border-emerald-100 text-center text-lg">🎉 ¡Cuentas sanas! No tienes cuentas pendientes por cobrar.</p>
+          <p className="text-emerald-600 font-bold bg-emerald-50 p-6 rounded-xl border border-emerald-100 text-center text-lg">🎉 ¡Cuentas sanas! No hay cuentas pendientes.</p>
         ) : (
           Object.entries(deudasAgrupadas).map(([nombre, datos]) => (
-            <div key={nombre} className="border border-gray-200 rounded-2xl bg-white shadow-sm overflow-hidden">
+            <div key={nombre} className="border border-gray-200 rounded-2xl bg-white shadow-sm overflow-hidden transition-all duration-300 hover:border-red-300">
               
-              {/* PERFIL DEL CLIENTE CON DEUDA RESALTADA */}
-              <div className="bg-red-50 p-6 flex justify-between items-center border-b border-red-100">
+              {/* RESUMEN DEL CLIENTE (Siempre visible, haz clic para expandir) */}
+              <div 
+                onClick={() => toggleDetalles(nombre)}
+                className="bg-red-50 p-5 flex justify-between items-center cursor-pointer hover:bg-red-100 transition-colors"
+              >
                 <div>
-                  <p className="font-black text-2xl text-gray-800">{nombre}</p>
-                  <p className="text-sm text-red-400 font-bold mt-1">Cuenta Corriente Activa</p>
+                  <p className="font-black text-xl text-gray-800 flex items-center gap-2">
+                    <span>{clienteExpandido === nombre ? '📂' : '📁'}</span> {nombre}
+                  </p>
+                  <p className="text-sm text-red-400 font-bold mt-1 ml-7">
+                    {clienteExpandido === nombre ? 'Ocultar historial' : 'Ver detalle de compras'}
+                  </p>
                 </div>
-                <div className="text-right flex flex-col items-end gap-3">
+                
+                <div className="text-right flex items-center gap-6">
                   <div>
                     <p className="text-xs text-red-500 font-bold uppercase mb-1">Deuda Acumulada</p>
-                    <p className="font-black text-red-600 text-3xl">S/ {datos.saldoTotal.toFixed(2)}</p>
+                    <p className="font-black text-red-600 text-2xl">S/ {datos.saldoTotal.toFixed(2)}</p>
                   </div>
+                  {/* Evitamos que el acordeón se cierre al darle clic al botón de abonar */}
                   <button 
-                    onClick={() => abonarDeudaGlobal(nombre, datos.historial, datos.saldoTotal)}
-                    className="bg-emerald-500 text-white font-bold px-6 py-2 rounded-xl hover:bg-emerald-600 transition-all shadow-md transform hover:-translate-y-1"
+                    onClick={(e) => { e.stopPropagation(); abonarDeudaGlobal(nombre, datos.historial, datos.saldoTotal); }}
+                    className="bg-emerald-500 text-white font-bold px-5 py-2 rounded-xl hover:bg-emerald-600 transition-all shadow-md transform hover:-translate-y-1"
                   >
-                    Abonar a la Cuenta 💰
+                    Abonar 💰
                   </button>
                 </div>
               </div>
               
-              {/* DESGLOSE DE COMPRAS */}
-              <div className="p-6 bg-gray-50 space-y-3">
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Desglose de compras pendientes</p>
-                {datos.historial.map(compra => {
-                  const saldo = compra.saldo !== undefined ? compra.saldo : (compra.total || compra.precio);
-                  return (
-                  <div key={compra.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex justify-between">
-                    <div>
-                      <p className="text-xs text-indigo-400 font-bold mb-1">🗓️ Ticket del {new Date(compra.fecha).toLocaleDateString()}</p>
-                      {compra.items ? compra.items.map((it, i) => (
-                           <p key={i} className="text-sm font-semibold text-gray-700">• {it.producto} <span className="text-gray-400 ml-1 font-normal">(S/{it.precio.toFixed(2)})</span></p>
-                        )) : <p className="text-sm font-semibold text-gray-700">• {compra.producto}</p>}
+              {/* DETALLE DE COMPRAS (Oculto por defecto) */}
+              {clienteExpandido === nombre && (
+                <div className="p-6 bg-gray-50 space-y-3 border-t border-red-100">
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Desglose de tickets</p>
+                  {datos.historial.map(compra => {
+                    const saldo = compra.saldo !== undefined ? compra.saldo : (compra.total || compra.precio);
+                    return (
+                    <div key={compra.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex justify-between">
+                      <div>
+                        <p className="text-xs text-indigo-400 font-bold mb-1">🗓️ Ticket del {new Date(compra.fecha).toLocaleDateString()}</p>
+                        {compra.items ? compra.items.map((it, i) => (
+                             <p key={i} className="text-sm font-semibold text-gray-700">• {it.producto} <span className="text-gray-400 ml-1 font-normal">(S/{it.precio.toFixed(2)})</span></p>
+                          )) : <p className="text-sm font-semibold text-gray-700">• {compra.producto}</p>}
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-gray-400 mb-1">Saldo del ticket</p>
+                        <span className="font-black text-red-500 text-lg">S/ {saldo.toFixed(2)}</span>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-xs text-gray-400 mb-1">Saldo del ticket</p>
-                      <span className="font-black text-red-500 text-lg">S/ {saldo.toFixed(2)}</span>
-                    </div>
-                  </div>
-                )})}
-              </div>
+                  )})}
+                </div>
+              )}
             </div>
           ))
         )}

@@ -5,12 +5,10 @@ export default function Ventas() {
   const [busqueda, setBusqueda] = useState('');
   const [clienteSeleccionado, setClienteSeleccionado] = useState(null);
   
-  // Estados para el Carrito
   const [carrito, setCarrito] = useState([]);
   const [productoActual, setProductoActual] = useState('');
   const [precioActual, setPrecioActual] = useState('');
   
-  const [tipoPago, setTipoPago] = useState('Contado');
   const [guardando, setGuardando] = useState(false);
   const [notificacion, setNotificacion] = useState({ visible: false, texto: '', tipo: '' });
 
@@ -25,7 +23,6 @@ export default function Ventas() {
 
   const clientesFiltrados = busqueda === '' ? [] : clientes.filter(c => c.nombre?.toLowerCase().includes(busqueda.toLowerCase()));
 
-  // AGREGAR AL CARRITO
   const agregarAlCarrito = () => {
     if (!productoActual || !precioActual || isNaN(precioActual) || parseFloat(precioActual) <= 0) {
       mostrarNotificacion('⚠️ Ingresa un producto y precio válido.', 'error');
@@ -44,7 +41,6 @@ export default function Ventas() {
 
   const totalCarrito = carrito.reduce((sum, item) => sum + item.precio, 0);
 
-  // FINALIZAR LA VENTA
   const handleGuardarVenta = async () => {
     if (!clienteSeleccionado) return mostrarNotificacion('⚠️ Debes seleccionar un cliente.', 'error');
     if (carrito.length === 0) return mostrarNotificacion('⚠️ El carrito está vacío.', 'error');
@@ -59,14 +55,14 @@ export default function Ventas() {
           clienteNombre: clienteSeleccionado.nombre,
           items: carrito,
           total: totalCarrito,
-          tipoPago,
-          estado: tipoPago === 'Crédito' ? 'Deuda' : 'Pagado'
+          tipoPago: 'Crédito', // Forzado por regla de negocio
+          estado: 'Deuda'      // Forzado por regla de negocio
         })
       });
 
       if (response.ok) {
-        mostrarNotificacion('✅ Pedido guardado exitosamente.', 'exito');
-        setBusqueda(''); setClienteSeleccionado(null); setCarrito([]); setTipoPago('Contado');
+        mostrarNotificacion('✅ Crédito registrado exitosamente.', 'exito');
+        setBusqueda(''); setClienteSeleccionado(null); setCarrito([]);
       } else {
         mostrarNotificacion('❌ Error al guardar en la base de datos.', 'error');
       }
@@ -80,7 +76,7 @@ export default function Ventas() {
   return (
     <div className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100">
       <h2 className="text-xl font-extrabold text-gray-800 mb-6 flex items-center gap-2">
-        <span className="text-orange-500">🛒</span> Crear Nuevo Pedido
+        <span className="text-orange-500">🛒</span> Registrar Nuevo Crédito
       </h2>
 
       {notificacion.visible && (
@@ -90,7 +86,6 @@ export default function Ventas() {
       )}
       
       <div className="space-y-4">
-        {/* BUSCADOR */}
         <div className="relative">
           <input type="text" value={busqueda} onChange={(e) => { setBusqueda(e.target.value); setClienteSeleccionado(null); }} placeholder="Buscar cliente..." className="w-full border border-gray-300 rounded-xl px-4 py-3 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-indigo-500" />
           {clientesFiltrados.length > 0 && !clienteSeleccionado && (
@@ -102,7 +97,6 @@ export default function Ventas() {
           )}
         </div>
 
-        {/* INPUTS DE PRODUCTOS */}
         <div className="flex gap-4 items-end bg-gray-50 p-4 rounded-xl border border-gray-200">
           <div className="flex-1">
             <label className="block text-xs font-bold text-gray-500 mb-1">Producto</label>
@@ -117,11 +111,10 @@ export default function Ventas() {
           </button>
         </div>
 
-        {/* LISTA DEL CARRITO */}
         {carrito.length > 0 && (
           <div className="border border-gray-200 rounded-xl overflow-hidden mt-4">
             <div className="bg-gray-100 px-4 py-2 font-bold text-gray-700 text-sm flex justify-between">
-              <span>Items en el pedido</span>
+              <span>Items a fiar</span>
               <span>S/ {totalCarrito.toFixed(2)}</span>
             </div>
             {carrito.map((item, i) => (
@@ -136,14 +129,9 @@ export default function Ventas() {
           </div>
         )}
         
-        {/* BOTON FINAL */}
-        <div className="flex gap-4 pt-4 border-t border-gray-100">
-          <select value={tipoPago} onChange={(e) => setTipoPago(e.target.value)} className="w-1/3 border border-gray-300 rounded-xl px-4 py-3 bg-gray-50 font-bold text-gray-700">
-            <option value="Contado">Pago al Contado</option>
-            <option value="Crédito">Otorgar a Crédito (Deuda)</option>
-          </select>
-          <button onClick={handleGuardarVenta} disabled={guardando} className="w-2/3 bg-gray-900 text-white font-bold py-3 px-4 rounded-xl hover:bg-black transition-all">
-            {guardando ? 'Guardando...' : `Confirmar Pedido de S/ ${totalCarrito.toFixed(2)}`}
+        <div className="pt-4 border-t border-gray-100">
+          <button onClick={handleGuardarVenta} disabled={guardando} className="w-full bg-gray-900 text-white font-bold py-3 px-4 rounded-xl hover:bg-black transition-all shadow-md">
+            {guardando ? 'Guardando...' : `Anotar Deuda por S/ ${totalCarrito.toFixed(2)}`}
           </button>
         </div>
       </div>
