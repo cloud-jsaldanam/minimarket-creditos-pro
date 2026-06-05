@@ -10,14 +10,15 @@ export default function Deudores() {
       if(Array.isArray(ventas)) {
         setVentasOriginales(ventas);
         const pendientes = ventas.filter(v => v.estado === 'Deuda');
+        
         const agrupado = pendientes.reduce((acc, deuda) => {
           if (!acc[deuda.clienteNombre]) acc[deuda.clienteNombre] = { saldoTotal: 0, historial: [] };
-          // Usa el saldo si existe, sino el total (o precio antiguo)
           const saldo = deuda.saldo !== undefined ? deuda.saldo : (deuda.total || deuda.precio);
           acc[deuda.clienteNombre].saldoTotal += saldo;
           acc[deuda.clienteNombre].historial.push(deuda);
           return acc;
         }, {});
+
         setDeudasAgrupadas(agrupado);
       }
       setCargando(false);
@@ -26,23 +27,43 @@ export default function Deudores() {
 
   useEffect(() => { cargarDeudas(); }, []);
 
-  const abonarDeuda = async (idVenta, saldoActual) => {
-    const montoRaw = prompt(`Saldo pendiente de esta compra: S/ ${saldoActual.toFixed(2)}\n\n¿Cuánto abonará el cliente hoy?`);
+  // LÓGICA CONTABLE AVANZADA: Pago Global repartido en los tickets más antiguos (FIFO)
+  const abonarDeudaGlobal = async (nombreCliente, historial, deudaTotal) => {
+    const montoRaw = prompt(`ESTADO DE CUENTA: ${nombreCliente}\nDeuda Total Actual: S/ ${deudaTotal.toFixed(2)}\n\n¿Cuánto dinero abonará el cliente en este momento?`);
     if (montoRaw === null) return; 
     
-    const monto = parseFloat(montoRaw);
-    if (isNaN(monto) || monto <= 0) return alert("⚠️ Monto inválido.");
+    let abonoPendiente = parseFloat(montoRaw);
+    if (isNaN(abonoPendiente) || abonoPendiente <= 0) return alert("⚠️ Monto inválido. Ingresa un número mayor a 0.");
+    if (abonoPendiente > deudaTotal) return alert(`⚠️ El abono (S/ ${abonoPendiente}) no puede ser mayor a la deuda total (S/ ${deudaTotal}).`);
 
     try {
-      await fetch('/api/ventas', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: idVenta, abono: monto })
-      });
-      alert(`✅ Abono registrado.`);
+      // 1. Ordenar el historial de compras de la más antigua a la más nueva
+      const ventasOrdenadas = [...historial].sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+
+      // 2. Repartir el dinero ingresado
+      for (const venta of ventasOrdenadas) {
+        if (abonoPendiente <= 0) break; // Si ya se acabó el dinero del abono, paramos
+
+        const saldoVenta = venta.saldo !== undefined ? venta.saldo : (venta.total || venta.precio);
+        
+        if (saldoVenta > 0) {
+          // Calculamos cuánto podemos pagarle a esta venta específica
+          const montoAAplicar = Math.min(abonoPendiente, saldoVenta);
+          abonoPendiente -= montoAAplicar; // Descontamos del fajo de dinero que nos dio el cliente
+
+          // Enviamos a la base de datos el pago de este pedacito
+          await fetch('/api/ventas', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: venta.id, abono: montoAAplicar })
+          });
+        }
+      }
+
+      alert(`✅ Abono de S/ ${parseFloat(montoRaw).toFixed(2)} registrado exitosamente. Los saldos se han actualizado.`);
       cargarDeudas();
     } catch (error) {
-      alert("❌ Error al procesar el abono.");
+      alert("❌ Error al procesar el abono en la base de datos.");
     }
   };
 
@@ -68,63 +89,66 @@ export default function Deudores() {
 
   return (
     <div className="bg-white p-8 rounded-2xl shadow-lg border border-red-100">
-      <div className="flex justify-between items-end mb-6 border-b pb-4">
-        <h2 className="text-xl font-extrabold text-gray-800 flex items-center gap-2">
+      {/* CABECERA PRINCIPAL */}
+      <div className="flex justify-between items-end mb-8 border-b pb-4">
+        <h2 className="text-2xl font-extrabold text-gray-800 flex items-center gap-2">
           <span className="text-red-500">⚠️</span> Control de Créditos
         </h2>
         <div className="flex items-center gap-6">
-          <button onClick={descargarCSVDeudas} className="bg-green-100 text-green-700 px-4 py-2 rounded-lg font-bold hover:bg-green-600 hover:text-white transition-all text-sm">
+          <button onClick={descargarCSVDeudas} className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-4 py-2 rounded-lg font-bold hover:bg-emerald-600 hover:text-white transition-all shadow-sm">
             📊 Descargar CSV
           </button>
           <div className="text-right">
-            <p className="text-xs text-gray-500 uppercase tracking-wide">Deuda Total Global</p>
-            <p className="text-3xl font-black text-red-600">S/ {totalGlobal.toFixed(2)}</p>
+            <p className="text-sm text-gray-500 font-bold uppercase tracking-wide">Deuda Total Global</p>
+            <p className="text-4xl font-black text-red-600">S/ {totalGlobal.toFixed(2)}</p>
           </div>
         </div>
       </div>
 
-      <div className="space-y-4">
-        {cargando ? <p>Cargando registros...</p> : Object.keys(deudasAgrupadas).length === 0 ? (
-          <p className="text-emerald-600 font-bold bg-emerald-50 p-4 rounded-lg">No hay cuentas pendientes.</p>
+      <div className="space-y-6">
+        {cargando ? <p className="text-gray-500 animate-pulse">Consultando base de datos...</p> : Object.keys(deudasAgrupadas).length === 0 ? (
+          <p className="text-emerald-600 font-bold bg-emerald-50 p-6 rounded-xl border border-emerald-100 text-center text-lg">🎉 ¡Cuentas sanas! No tienes cuentas pendientes por cobrar.</p>
         ) : (
           Object.entries(deudasAgrupadas).map(([nombre, datos]) => (
-            <div key={nombre} className="border border-gray-200 rounded-xl p-4 bg-gray-50 shadow-sm">
-              <div className="flex justify-between items-center mb-3">
-                <p className="font-extrabold text-lg text-gray-800">{nombre}</p>
-                <p className="font-bold text-red-600 text-lg">Deuda Total: S/ {datos.saldoTotal.toFixed(2)}</p>
+            <div key={nombre} className="border border-gray-200 rounded-2xl bg-white shadow-sm overflow-hidden">
+              
+              {/* PERFIL DEL CLIENTE CON DEUDA RESALTADA */}
+              <div className="bg-red-50 p-6 flex justify-between items-center border-b border-red-100">
+                <div>
+                  <p className="font-black text-2xl text-gray-800">{nombre}</p>
+                  <p className="text-sm text-red-400 font-bold mt-1">Cuenta Corriente Activa</p>
+                </div>
+                <div className="text-right flex flex-col items-end gap-3">
+                  <div>
+                    <p className="text-xs text-red-500 font-bold uppercase mb-1">Deuda Acumulada</p>
+                    <p className="font-black text-red-600 text-3xl">S/ {datos.saldoTotal.toFixed(2)}</p>
+                  </div>
+                  <button 
+                    onClick={() => abonarDeudaGlobal(nombre, datos.historial, datos.saldoTotal)}
+                    className="bg-emerald-500 text-white font-bold px-6 py-2 rounded-xl hover:bg-emerald-600 transition-all shadow-md transform hover:-translate-y-1"
+                  >
+                    Abonar a la Cuenta 💰
+                  </button>
+                </div>
               </div>
               
-              <div className="pl-4 border-l-2 border-red-200 space-y-3 mt-2">
+              {/* DESGLOSE DE COMPRAS */}
+              <div className="p-6 bg-gray-50 space-y-3">
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Desglose de compras pendientes</p>
                 {datos.historial.map(compra => {
                   const saldo = compra.saldo !== undefined ? compra.saldo : (compra.total || compra.precio);
                   return (
-                  <div key={compra.id} className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
-                        <p className="text-xs text-gray-400 font-bold mb-1">🗓️ Venta: {new Date(compra.fecha).toLocaleDateString()}</p>
-                        {compra.items ? compra.items.map((it, i) => (
-                           <p key={i} className="text-sm text-gray-700">• {it.producto} <span className="text-gray-400">(S/{it.precio})</span></p>
-                        )) : <p className="text-sm text-gray-700">• {compra.producto}</p>}
-                      </div>
-                      <div className="flex flex-col items-end gap-2">
-                        <span className="font-black text-red-500 text-lg">Saldo: S/ {saldo.toFixed(2)}</span>
-                        <button onClick={() => abonarDeuda(compra.id, saldo)} className="bg-emerald-100 text-emerald-700 font-bold px-4 py-1.5 rounded-lg hover:bg-emerald-600 hover:text-white transition-all text-sm">
-                          Abonar 💰
-                        </button>
-                      </div>
+                  <div key={compra.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex justify-between">
+                    <div>
+                      <p className="text-xs text-indigo-400 font-bold mb-1">🗓️ Ticket del {new Date(compra.fecha).toLocaleDateString()}</p>
+                      {compra.items ? compra.items.map((it, i) => (
+                           <p key={i} className="text-sm font-semibold text-gray-700">• {it.producto} <span className="text-gray-400 ml-1 font-normal">(S/{it.precio.toFixed(2)})</span></p>
+                        )) : <p className="text-sm font-semibold text-gray-700">• {compra.producto}</p>}
                     </div>
-                    {/* Historial de abonos de esta compra */}
-                    {compra.abonos && compra.abonos.length > 0 && (
-                      <div className="mt-3 bg-gray-50 p-2 rounded text-xs">
-                        <p className="font-bold text-gray-500 mb-1">Historial de Pagos:</p>
-                        {compra.abonos.map((ab, i) => (
-                          <div key={i} className="flex justify-between text-gray-600">
-                            <span>{new Date(ab.fecha).toLocaleDateString()} a las {new Date(ab.fecha).toLocaleTimeString()}</span>
-                            <span className="text-emerald-600 font-bold">+ S/ {ab.monto.toFixed(2)}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                    <div className="text-right">
+                      <p className="text-xs text-gray-400 mb-1">Saldo del ticket</p>
+                      <span className="font-black text-red-500 text-lg">S/ {saldo.toFixed(2)}</span>
+                    </div>
                   </div>
                 )})}
               </div>
