@@ -55,8 +55,8 @@ export default function Ventas() {
           clienteNombre: clienteSeleccionado.nombre,
           items: carrito,
           total: totalCarrito,
-          tipoPago: 'Crédito', // Forzado por regla de negocio
-          estado: 'Deuda'      // Forzado por regla de negocio
+          tipoPago: 'Crédito', // Bloqueado estrictamente a crédito
+          estado: 'Deuda'
         })
       });
 
@@ -129,6 +129,7 @@ export default function Ventas() {
           </div>
         )}
         
+        {/* BOTÓN LIMPIO Y COMPLETO */}
         <div className="pt-4 border-t border-gray-100">
           <button onClick={handleGuardarVenta} disabled={guardando} className="w-full bg-gray-900 text-white font-bold py-3 px-4 rounded-xl hover:bg-black transition-all shadow-md">
             {guardando ? 'Guardando...' : `Anotar Deuda por S/ ${totalCarrito.toFixed(2)}`}
