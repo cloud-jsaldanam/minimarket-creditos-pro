@@ -22,7 +22,8 @@ function App() {
       if (Date.now() - tiempoInicio < ochoHoras) {
         setAutenticado(true);
       } else {
-        localStorage.removeItem('minimarket_session'); // Expiró
+        localStorage.removeItem('minimarket_session');
+        localStorage.removeItem('minimarket_user');
       }
     }
     setCargandoSesion(false);
@@ -30,9 +31,16 @@ function App() {
 
   const handleLogin = (e) => {
     e.preventDefault();
-    if (usuario === 'admin' && password === 'Caracas2026$$') {
-      // Guardar timestamp actual en el navegador
+    
+    // VALIDACIÓN DE MÚLTIPLES CUENTAS
+    const credencialesAdmin = usuario === 'admin' && password === 'Caracas2026$$';
+    const credencialesIsabel = usuario === 'Isabel' && password === '220860';
+
+    if (credencialesAdmin || credencialesIsabel) {
+      // Guardar sesión y nombre de usuario en el navegador
       localStorage.setItem('minimarket_session', Date.now().toString());
+      localStorage.setItem('minimarket_user', usuario);
+      
       setAutenticado(true);
       setErrorLogin('');
     } else {
@@ -42,6 +50,7 @@ function App() {
 
   const handleLogout = () => {
     localStorage.removeItem('minimarket_session');
+    localStorage.removeItem('minimarket_user');
     setAutenticado(false);
     setUsuario('');
     setPassword('');
@@ -70,6 +79,9 @@ function App() {
     );
   }
 
+  // Rescatar el nombre del usuario para mostrarlo en la interfaz
+  const usuarioActivo = localStorage.getItem('minimarket_user') || 'Usuario';
+
   return (
     <div className="min-h-screen bg-gray-50 p-8 font-sans text-gray-800">
       <div className="flex justify-between items-center border-b border-gray-200 pb-2 mb-10">
@@ -79,7 +91,12 @@ function App() {
           <button onClick={() => setVistaActiva('clientes')} className={`flex items-center gap-2 transition-colors ${vistaActiva === 'clientes' ? 'text-indigo-700 font-bold border-b-2 border-indigo-700 pb-2 -mb-[9px]' : 'text-gray-400 hover:text-indigo-500'}`}><span>👥</span> Clientes</button>
           <button onClick={() => setVistaActiva('deudores')} className={`flex items-center gap-2 transition-colors ${vistaActiva === 'deudores' ? 'text-red-500 font-bold border-b-2 border-red-500 pb-2 -mb-[9px]' : 'text-gray-400 hover:text-red-400'}`}><span>⚠️</span> Deudores</button>
         </div>
-        <button onClick={handleLogout} className="text-sm font-bold text-gray-500 hover:text-red-600 transition-colors">Cerrar Sesión</button>
+        <div className="flex items-center gap-4">
+          <span className="text-sm font-bold text-indigo-700 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100">
+            👤 Hola, {usuarioActivo}
+          </span>
+          <button onClick={handleLogout} className="text-sm font-bold text-gray-500 hover:text-red-600 transition-colors">Cerrar Sesión</button>
+        </div>
       </div>
 
       <div className="max-w-4xl mx-auto">
