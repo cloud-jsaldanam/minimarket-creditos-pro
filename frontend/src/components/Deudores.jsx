@@ -4,8 +4,6 @@ export default function Deudores() {
   const [deudasAgrupadas, setDeudasAgrupadas] = useState({});
   const [ventasOriginales, setVentasOriginales] = useState([]);
   const [cargando, setCargando] = useState(true);
-  
-  // Estado para controlar qué cliente está desplegado (Acordeón)
   const [clienteExpandido, setClienteExpandido] = useState(null);
 
   const cargarDeudas = () => {
@@ -30,9 +28,7 @@ export default function Deudores() {
 
   useEffect(() => { cargarDeudas(); }, []);
 
-  const toggleDetalles = (nombre) => {
-    setClienteExpandido(clienteExpandido === nombre ? null : nombre);
-  };
+  const toggleDetalles = (nombre) => setClienteExpandido(clienteExpandido === nombre ? null : nombre);
 
   const abonarDeudaGlobal = async (nombreCliente, historial, deudaTotal) => {
     const montoRaw = prompt(`ESTADO DE CUENTA: ${nombreCliente}\nDeuda Total: S/ ${deudaTotal.toFixed(2)}\n\n¿Cuánto abonará el cliente?`);
@@ -89,75 +85,70 @@ export default function Deudores() {
   const totalGlobal = Object.values(deudasAgrupadas).reduce((acc, curr) => acc + curr.saldoTotal, 0);
 
   return (
-    <div className="bg-white p-8 rounded-2xl shadow-lg border border-red-100">
-      <div className="flex justify-between items-end mb-8 border-b pb-4">
-        <h2 className="text-2xl font-extrabold text-gray-800 flex items-center gap-2">
+    <div className="bg-white p-5 md:p-8 rounded-2xl shadow-lg border border-red-100">
+      
+      {/* Cabecera Responsiva */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 border-b pb-4 gap-4">
+        <h2 className="text-xl md:text-2xl font-extrabold text-gray-800 flex items-center gap-2">
           <span className="text-red-500">⚠️</span> Control de Créditos
         </h2>
-        <div className="flex items-center gap-6">
-          <button onClick={descargarCSVDeudas} className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-4 py-2 rounded-lg font-bold hover:bg-emerald-600 hover:text-white transition-all shadow-sm text-sm">
+        
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full md:w-auto">
+          <button onClick={descargarCSVDeudas} className="w-full sm:w-auto bg-emerald-50 text-emerald-700 border border-emerald-200 px-4 py-3 md:py-2 rounded-lg font-bold hover:bg-emerald-600 hover:text-white transition-all shadow-sm text-sm">
             📊 Descargar CSV
           </button>
-          <div className="text-right">
-            <p className="text-sm text-gray-500 font-bold uppercase tracking-wide">Deuda Total Global</p>
-            <p className="text-4xl font-black text-red-600">S/ {totalGlobal.toFixed(2)}</p>
+          <div className="text-left md:text-right w-full sm:w-auto border-t sm:border-none pt-3 sm:pt-0 border-red-100">
+            <p className="text-xs md:text-sm text-gray-500 font-bold uppercase tracking-wide">Deuda Total Global</p>
+            <p className="text-3xl md:text-4xl font-black text-red-600">S/ {totalGlobal.toFixed(2)}</p>
           </div>
         </div>
       </div>
 
       <div className="space-y-4">
-        {cargando ? <p className="text-gray-500 animate-pulse">Consultando base de datos...</p> : Object.keys(deudasAgrupadas).length === 0 ? (
-          <p className="text-emerald-600 font-bold bg-emerald-50 p-6 rounded-xl border border-emerald-100 text-center text-lg">🎉 ¡Cuentas sanas! No hay cuentas pendientes.</p>
+        {cargando ? <p className="text-gray-500 animate-pulse text-sm">Consultando BD...</p> : Object.keys(deudasAgrupadas).length === 0 ? (
+          <p className="text-emerald-600 font-bold bg-emerald-50 p-6 rounded-xl border border-emerald-100 text-center text-sm md:text-lg">🎉 No hay cuentas pendientes.</p>
         ) : (
           Object.entries(deudasAgrupadas).map(([nombre, datos]) => (
             <div key={nombre} className="border border-gray-200 rounded-2xl bg-white shadow-sm overflow-hidden transition-all duration-300 hover:border-red-300">
               
-              {/* RESUMEN DEL CLIENTE (Siempre visible, haz clic para expandir) */}
-              <div 
-                onClick={() => toggleDetalles(nombre)}
-                className="bg-red-50 p-5 flex justify-between items-center cursor-pointer hover:bg-red-100 transition-colors"
-              >
+              {/* Acordeón Responsivo */}
+              <div onClick={() => toggleDetalles(nombre)} className="bg-red-50 p-4 md:p-5 flex flex-col md:flex-row justify-between md:items-center cursor-pointer hover:bg-red-100 transition-colors gap-4">
                 <div>
-                  <p className="font-black text-xl text-gray-800 flex items-center gap-2">
-                    <span>{clienteExpandido === nombre ? '📂' : '📁'}</span> {nombre}
+                  <p className="font-black text-lg md:text-xl text-gray-800 flex items-center gap-2">
+                    <span>{clienteExpandido === nombre ? '📂' : '📁'}</span> <span className="break-words">{nombre}</span>
                   </p>
-                  <p className="text-sm text-red-400 font-bold mt-1 ml-7">
+                  <p className="text-xs md:text-sm text-red-400 font-bold mt-1 ml-7">
                     {clienteExpandido === nombre ? 'Ocultar historial' : 'Ver detalle de compras'}
                   </p>
                 </div>
                 
-                <div className="text-right flex items-center gap-6">
+                <div className="text-left md:text-right flex flex-col md:items-end gap-3 w-full md:w-auto ml-7 md:ml-0">
                   <div>
-                    <p className="text-xs text-red-500 font-bold uppercase mb-1">Deuda Acumulada</p>
-                    <p className="font-black text-red-600 text-2xl">S/ {datos.saldoTotal.toFixed(2)}</p>
+                    <p className="text-[10px] md:text-xs text-red-500 font-bold uppercase mb-1">Deuda Acumulada</p>
+                    <p className="font-black text-red-600 text-xl md:text-2xl">S/ {datos.saldoTotal.toFixed(2)}</p>
                   </div>
-                  {/* Evitamos que el acordeón se cierre al darle clic al botón de abonar */}
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); abonarDeudaGlobal(nombre, datos.historial, datos.saldoTotal); }}
-                    className="bg-emerald-500 text-white font-bold px-5 py-2 rounded-xl hover:bg-emerald-600 transition-all shadow-md transform hover:-translate-y-1"
-                  >
+                  <button onClick={(e) => { e.stopPropagation(); abonarDeudaGlobal(nombre, datos.historial, datos.saldoTotal); }} className="w-full md:w-auto bg-emerald-500 text-white font-bold px-5 py-3 md:py-2 rounded-xl hover:bg-emerald-600 transition-all shadow-md text-sm">
                     Abonar 💰
                   </button>
                 </div>
               </div>
               
-              {/* DETALLE DE COMPRAS (Oculto por defecto) */}
               {clienteExpandido === nombre && (
-                <div className="p-6 bg-gray-50 space-y-3 border-t border-red-100">
-                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Desglose de tickets</p>
+                <div className="p-4 md:p-6 bg-gray-50 space-y-3 border-t border-red-100">
+                  <p className="text-[10px] md:text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Desglose de tickets</p>
                   {datos.historial.map(compra => {
                     const saldo = compra.saldo !== undefined ? compra.saldo : (compra.total || compra.precio);
                     return (
-                    <div key={compra.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex justify-between">
+                    <div key={compra.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col sm:flex-row justify-between gap-3">
                       <div>
-                        <p className="text-xs text-indigo-400 font-bold mb-1">🗓️ Ticket del {new Date(compra.fecha).toLocaleDateString()}</p>
+                        <p className="text-xs text-indigo-400 font-bold mb-2">🗓️ {new Date(compra.fecha).toLocaleDateString()}</p>
                         {compra.items ? compra.items.map((it, i) => (
-                             <p key={i} className="text-sm font-semibold text-gray-700">• {it.producto} <span className="text-gray-400 ml-1 font-normal">(S/{it.precio.toFixed(2)})</span></p>
-                          )) : <p className="text-sm font-semibold text-gray-700">• {compra.producto}</p>}
+                             <p key={i} className="text-xs md:text-sm font-semibold text-gray-700 break-words">• {it.producto} <span className="text-gray-400 ml-1 font-normal block sm:inline">(S/{it.precio.toFixed(2)})</span></p>
+                          )) : <p className="text-xs md:text-sm font-semibold text-gray-700">• {compra.producto}</p>}
                       </div>
-                      <div className="text-right">
-                        <p className="text-xs text-gray-400 mb-1">Saldo del ticket</p>
-                        <span className="font-black text-red-500 text-lg">S/ {saldo.toFixed(2)}</span>
+                      <div className="text-left sm:text-right bg-red-50 sm:bg-transparent p-2 sm:p-0 rounded-lg">
+                        <p className="text-[10px] md:text-xs text-gray-400 mb-1 font-bold">Saldo del ticket</p>
+                        <span className="font-black text-red-500 text-base md:text-lg">S/ {saldo.toFixed(2)}</span>
                       </div>
                     </div>
                   )})}

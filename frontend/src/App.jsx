@@ -12,7 +12,6 @@ function App() {
   const [errorLogin, setErrorLogin] = useState('');
   const [vistaActiva, setVistaActiva] = useState('dashboard');
 
-  // VERIFICAR SESIÓN ACTIVA AL REFRESCAR LA PÁGINA
   useEffect(() => {
     const sesionGuardada = localStorage.getItem('minimarket_session');
     if (sesionGuardada) {
@@ -31,16 +30,12 @@ function App() {
 
   const handleLogin = (e) => {
     e.preventDefault();
-    
-    // VALIDACIÓN DE MÚLTIPLES CUENTAS
     const credencialesAdmin = usuario === 'admin' && password === 'Caracas2026$$';
     const credencialesIsabel = usuario === 'Isabel' && password === '220860';
 
     if (credencialesAdmin || credencialesIsabel) {
-      // Guardar sesión y nombre de usuario en el navegador
       localStorage.setItem('minimarket_session', Date.now().toString());
       localStorage.setItem('minimarket_user', usuario);
-      
       setAutenticado(true);
       setErrorLogin('');
     } else {
@@ -67,7 +62,6 @@ function App() {
             <h1 className="text-2xl font-black text-gray-800 mt-4">Sistema Minimarket</h1>
             <p className="text-gray-500">Ingresa tus credenciales para continuar</p>
           </div>
-          
           <form onSubmit={handleLogin} className="space-y-4">
             {errorLogin && <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm text-center border border-red-200">{errorLogin}</div>}
             <input type="text" placeholder="Usuario" value={usuario} onChange={e => setUsuario(e.target.value)} className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 outline-none" />
@@ -79,23 +73,26 @@ function App() {
     );
   }
 
-  // Rescatar el nombre del usuario para mostrarlo en la interfaz
   const usuarioActivo = localStorage.getItem('minimarket_user') || 'Usuario';
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8 font-sans text-gray-800">
-      <div className="flex justify-between items-center border-b border-gray-200 pb-2 mb-10">
-        <div className="flex flex-wrap gap-6 text-lg">
-          <button onClick={() => setVistaActiva('dashboard')} className={`flex items-center gap-2 transition-colors ${vistaActiva === 'dashboard' ? 'text-emerald-600 font-bold border-b-2 border-emerald-600 pb-2 -mb-[9px]' : 'text-gray-400 hover:text-emerald-500'}`}><span>📈</span> Dashboard</button>
-          <button onClick={() => setVistaActiva('ventas')} className={`flex items-center gap-2 transition-colors ${vistaActiva === 'ventas' ? 'text-orange-500 font-bold border-b-2 border-orange-500 pb-2 -mb-[9px]' : 'text-gray-400 hover:text-orange-400'}`}><span>🛒</span> Nueva Venta</button>
-          <button onClick={() => setVistaActiva('clientes')} className={`flex items-center gap-2 transition-colors ${vistaActiva === 'clientes' ? 'text-indigo-700 font-bold border-b-2 border-indigo-700 pb-2 -mb-[9px]' : 'text-gray-400 hover:text-indigo-500'}`}><span>👥</span> Clientes</button>
-          <button onClick={() => setVistaActiva('deudores')} className={`flex items-center gap-2 transition-colors ${vistaActiva === 'deudores' ? 'text-red-500 font-bold border-b-2 border-red-500 pb-2 -mb-[9px]' : 'text-gray-400 hover:text-red-400'}`}><span>⚠️</span> Deudores</button>
+    <div className="min-h-screen bg-gray-50 p-4 md:p-8 font-sans text-gray-800">
+      {/* Cabecera Responsiva */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-gray-200 pb-4 mb-6 md:mb-10 gap-4">
+        
+        {/* Menú deslizable en celulares */}
+        <div className="flex overflow-x-auto w-full md:w-auto gap-6 text-sm md:text-lg pb-2 md:pb-0 whitespace-nowrap">
+          <button onClick={() => setVistaActiva('dashboard')} className={`flex items-center gap-2 transition-colors ${vistaActiva === 'dashboard' ? 'text-emerald-600 font-bold border-b-2 border-emerald-600 pb-2' : 'text-gray-400 hover:text-emerald-500'}`}><span>📈</span> Dashboard</button>
+          <button onClick={() => setVistaActiva('ventas')} className={`flex items-center gap-2 transition-colors ${vistaActiva === 'ventas' ? 'text-orange-500 font-bold border-b-2 border-orange-500 pb-2' : 'text-gray-400 hover:text-orange-400'}`}><span>🛒</span> Nueva Venta</button>
+          <button onClick={() => setVistaActiva('clientes')} className={`flex items-center gap-2 transition-colors ${vistaActiva === 'clientes' ? 'text-indigo-700 font-bold border-b-2 border-indigo-700 pb-2' : 'text-gray-400 hover:text-indigo-500'}`}><span>👥</span> Clientes</button>
+          <button onClick={() => setVistaActiva('deudores')} className={`flex items-center gap-2 transition-colors ${vistaActiva === 'deudores' ? 'text-red-500 font-bold border-b-2 border-red-500 pb-2' : 'text-gray-400 hover:text-red-400'}`}><span>⚠️</span> Deudores</button>
         </div>
-        <div className="flex items-center gap-4">
-          <span className="text-sm font-bold text-indigo-700 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100">
+        
+        <div className="flex items-center justify-between w-full md:w-auto gap-4">
+          <span className="text-xs md:text-sm font-bold text-indigo-700 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100">
             👤 Hola, {usuarioActivo}
           </span>
-          <button onClick={handleLogout} className="text-sm font-bold text-gray-500 hover:text-red-600 transition-colors">Cerrar Sesión</button>
+          <button onClick={handleLogout} className="text-xs md:text-sm font-bold text-gray-500 hover:text-red-600 transition-colors">Cerrar Sesión</button>
         </div>
       </div>
 
