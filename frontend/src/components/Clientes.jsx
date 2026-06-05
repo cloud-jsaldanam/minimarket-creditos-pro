@@ -50,19 +50,6 @@ export default function Clientes() {
     }
   };
 
-  const descargarCSV = () => {
-    const cabeceras = "Nombre,Telefono\n";
-    const filas = clientes.map(c => `"${c.nombre}","${c.telefono || 'Sin teléfono'}"`).join("\n");
-    const blob = new Blob([cabeceras + filas], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', 'Registro_Clientes.csv');
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
   return (
     <div className="space-y-6">
       <div className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100">
@@ -88,9 +75,6 @@ export default function Clientes() {
       <div className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-extrabold text-gray-800">Directorio ({clientes.length})</h2>
-          <button onClick={descargarCSV} className="bg-green-100 text-green-700 px-4 py-2 rounded-lg font-bold hover:bg-green-600 hover:text-white transition-all flex items-center gap-2">
-            <span>📊</span> Descargar CSV
-          </button>
         </div>
         <div className="max-h-64 overflow-y-auto border border-gray-100 rounded-xl">
           {clientes.map(c => (
