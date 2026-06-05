@@ -85,21 +85,22 @@ export default function Deudores() {
   const totalGlobal = Object.values(deudasAgrupadas).reduce((acc, curr) => acc + curr.saldoTotal, 0);
 
   return (
-    <div className="bg-white p-5 md:p-8 rounded-2xl shadow-lg border border-red-100">
+    <div className="bg-white p-4 md:p-8 rounded-2xl shadow-lg border border-red-100">
       
-      {/* Cabecera Responsiva */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 border-b pb-4 gap-4">
+      {/* Cabecera Responsiva Reestructurada */}
+      <div className="flex flex-col mb-8 border-b pb-5 gap-5">
         <h2 className="text-xl md:text-2xl font-extrabold text-gray-800 flex items-center gap-2">
           <span className="text-red-500">⚠️</span> Control de Créditos
         </h2>
         
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full md:w-auto">
-          <button onClick={descargarCSVDeudas} className="w-full sm:w-auto bg-emerald-50 text-emerald-700 border border-emerald-200 px-4 py-3 md:py-2 rounded-lg font-bold hover:bg-emerald-600 hover:text-white transition-all shadow-sm text-sm">
+        {/* En móvil: Deuda arriba, Botón CSV abajo. En PC: Lado a lado */}
+        <div className="flex flex-col-reverse md:flex-row justify-between md:items-center w-full gap-4">
+          <button onClick={descargarCSVDeudas} className="w-full md:w-auto bg-emerald-50 text-emerald-700 border border-emerald-200 px-4 py-3 md:py-2 rounded-xl font-bold hover:bg-emerald-600 hover:text-white transition-all shadow-sm text-sm flex justify-center items-center">
             📊 Descargar CSV
           </button>
-          <div className="text-left md:text-right w-full sm:w-auto border-t sm:border-none pt-3 sm:pt-0 border-red-100">
-            <p className="text-xs md:text-sm text-gray-500 font-bold uppercase tracking-wide">Deuda Total Global</p>
-            <p className="text-3xl md:text-4xl font-black text-red-600">S/ {totalGlobal.toFixed(2)}</p>
+          <div className="text-left md:text-right border-b md:border-none pb-4 md:pb-0 border-gray-100">
+            <p className="text-xs text-gray-500 font-bold uppercase tracking-wide">Deuda Total Global</p>
+            <p className="text-4xl font-black text-red-600">S/ {totalGlobal.toFixed(2)}</p>
           </div>
         </div>
       </div>
@@ -111,26 +112,39 @@ export default function Deudores() {
           Object.entries(deudasAgrupadas).map(([nombre, datos]) => (
             <div key={nombre} className="border border-gray-200 rounded-2xl bg-white shadow-sm overflow-hidden transition-all duration-300 hover:border-red-300">
               
-              {/* Acordeón Responsivo */}
-              <div onClick={() => toggleDetalles(nombre)} className="bg-red-50 p-4 md:p-5 flex flex-col md:flex-row justify-between md:items-center cursor-pointer hover:bg-red-100 transition-colors gap-4">
-                <div>
-                  <p className="font-black text-lg md:text-xl text-gray-800 flex items-center gap-2">
-                    <span>{clienteExpandido === nombre ? '📂' : '📁'}</span> <span className="break-words">{nombre}</span>
+              {/* Acordeón Optimizado para Móvil */}
+              <div onClick={() => toggleDetalles(nombre)} className="bg-red-50 p-4 md:p-5 flex flex-col md:flex-row justify-between cursor-pointer hover:bg-red-100 transition-colors gap-4">
+                
+                {/* Línea Superior en Móvil / Lado Izquierdo en PC */}
+                <div className="flex justify-between items-center w-full md:w-auto">
+                  <p className="font-black text-lg md:text-xl text-gray-800 flex items-center gap-2 truncate pr-2">
+                    <span>{clienteExpandido === nombre ? '📂' : '📁'}</span> 
+                    <span className="truncate">{nombre}</span>
                   </p>
-                  <p className="text-xs md:text-sm text-red-400 font-bold mt-1 ml-7">
-                    {clienteExpandido === nombre ? 'Ocultar historial' : 'Ver detalle de compras'}
-                  </p>
+                  {/* Total visible junto al nombre en móvil */}
+                  <p className="md:hidden font-black text-red-600 text-xl whitespace-nowrap">S/ {datos.saldoTotal.toFixed(2)}</p>
                 </div>
                 
-                <div className="text-left md:text-right flex flex-col md:items-end gap-3 w-full md:w-auto ml-7 md:ml-0">
-                  <div>
-                    <p className="text-[10px] md:text-xs text-red-500 font-bold uppercase mb-1">Deuda Acumulada</p>
-                    <p className="font-black text-red-600 text-xl md:text-2xl">S/ {datos.saldoTotal.toFixed(2)}</p>
+                {/* Línea Inferior en Móvil / Lado Derecho en PC */}
+                <div className="flex justify-between items-center w-full md:w-auto pl-7 md:pl-0 gap-4">
+                  <p className="text-xs text-red-400 font-bold md:hidden">
+                    {clienteExpandido === nombre ? 'Ocultar historial' : 'Ver detalles'}
+                  </p>
+
+                  <div className="hidden md:block text-right">
+                    <p className="text-xs text-red-500 font-bold uppercase mb-1">Deuda Acumulada</p>
+                    <p className="font-black text-red-600 text-2xl">S/ {datos.saldoTotal.toFixed(2)}</p>
                   </div>
-                  <button onClick={(e) => { e.stopPropagation(); abonarDeudaGlobal(nombre, datos.historial, datos.saldoTotal); }} className="w-full md:w-auto bg-emerald-500 text-white font-bold px-5 py-3 md:py-2 rounded-xl hover:bg-emerald-600 transition-all shadow-md text-sm">
+
+                  <button onClick={(e) => { e.stopPropagation(); abonarDeudaGlobal(nombre, datos.historial, datos.saldoTotal); }} className="w-auto bg-emerald-500 text-white font-bold px-4 py-2 md:px-5 rounded-xl hover:bg-emerald-600 transition-all shadow-md text-sm md:text-base">
                     Abonar 💰
                   </button>
                 </div>
+                
+                {/* Helper text solo para PC */}
+                <p className="hidden md:block absolute left-[84px] mt-7 text-xs text-red-400 font-bold">
+                  {clienteExpandido === nombre ? 'Ocultar historial' : 'Ver detalle de compras'}
+                </p>
               </div>
               
               {clienteExpandido === nombre && (
